@@ -21,6 +21,6 @@ See the [documentation](docs/enigma_xml.md) page.
 
 ## Other Resources
 
-Many of the tags in Enigma Xml correspond to classes and properties in the [Finale PDK Framework](https://pdk.finalelua.com/). To the extent these can be mapped to the Xml, that documentation is also maintained.
+Many of the tags in Enigma Xml correspond to classes and properties in the [Finale PDK Framework](https://pdk.finalelua.com/). To the extent these can be mapped to the Xml, those links into the PDK Framework documentation are also maintained.
 
-Another tool that may help decipher the format is the free [Enigma Text Dump](https://robertgpatterson.com/-fininfo/-downloads/download-free.html) plugin for Finale. It spits out a text file of all the data it can find in the document in a format similar to the old Enigma Text File format. Where they are known, the output includes references to the corresponding PDK Framework classes.
+Another tool that may help decipher the format is the free [Enigma Text Dump](https://robertgpatterson.com/-fininfo/-downloads/download-free.html) plugin for Finale. It spits out a text file of all the data it can find in the document in a format similar to the old Enigma Text File format. Where they are known, the output includes references to the corresponding PDK Framework class names.
