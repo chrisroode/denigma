@@ -1,0 +1,9 @@
+deps/
+
+# FU MacOS!!!!
+.DS_Store
+
+nodeApp/node_modules/
+
+# this is a folder where I run scripts and all kinds of junk files are created.  Where I target the nuking of files.
+/nodeApp/groundZero

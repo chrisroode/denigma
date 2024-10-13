@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas and Input Example</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Disable scroll bars */
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+    }
+
+	.container {
+		text-align: center;
+		display:flex;
+		flex-direction:row;
+	  
+    }
+
+    canvas {
+	  border: solid 1px black;
+	  margin: 10px;
+      background-color: #f0f0f0;
+	  
+      touch-action: none; /* Disable touch scrolling */
+    }
+	.canvasContainer {
+  	  
+	}
+	.uiButtons {
+		background-color:'blue';
+		display:flex;
+		flex-direction:column;
+	}
+
+    input[type="text"] {
+      width: 50px;
+      text-align: center;
+      font-size: 24px;
+    }
+
+    button {
+      font-size: 16px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="canvasContainer">
+		<canvas id="myCanvas"></canvas>
+	</div>
+	<div class="uiButtons">
+		<div>
+			Outer Tip X<input type="number" id="outerTipX" value="-0.04167"/>
+			Y<input type="number"  id="outerTipY" value="0.16667"/>
+		</div>
+		<div>
+			Inner Tip X<input type="number" id="innerTipX" value="0.08333" />
+			Y<input type="number"  id="innerTipY" value="0.08333" />
+		</div>
+		<div>
+			Outer Body X<input type="number" id="outerBodyX" value="0.02083" />
+			Y<input type="number"  id="outerBodyY" value="0.08333" />
+		</div>
+		<div>
+			Outer Body X<input type="number" id="innerBodyX" value="0" />
+			Y<input type="number"  id="innerBodyY" value="-0.04167" />
+		</div>
+		<div>
+			Width Of Brace<input type="number" id="widthOfBrace" value="0.08333" />
+		</div>
+		<div>
+			Center Thickness<input type="number" id="centerThickness" value="0.0125" />
+		</div>
+		<div>
+			Tip Thickness<input type="number" id="tipThickness" value="0.0125" />
+		</div>
+		<div>
+			Staff Distance<input type="number" id="staffDistance" value="2.58" />
+		</div>
+	</div>
+    <br>
+    
+  </div>
+
+  <script>
+	  const IMAGE_WIDTH = 24;
+	  const PEN_SIZE = 4;
+	  const PEN_PASSES = 10;
+	  const offscreenCanvas = new OffscreenCanvas(IMAGE_WIDTH,IMAGE_WIDTH);
+	  const offctx = offscreenCanvas.getContext('2d');
+	  
+	  
+	  
+	  
+	  
+
+    // Get references to canvas and container
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      // Set canvas size to the minimum of window width or height
+      const size = Math.min(window.innerWidth*.95, window.innerHeight*.9);
+      canvas.width = size/2;
+      canvas.height = size;
+      drawCanvas();
+    }
+	 function drawCanvas() {
+		
+		const outerBodyX = Number(document.getElementById('outerBodyX').value);
+		const outerBodyY = Number(document.getElementById('outerBodyY').value);
+		const innerBodyX = Number(document.getElementById('innerBodyX').value);
+		const innerBodyY = Number(document.getElementById('innerBodyY').value);
+		const outerTipX = Number(document.getElementById('outerTipX').value);
+		const outerTipY = Number(document.getElementById('outerTipY').value);
+		const innerTipX = Number(document.getElementById('innerTipX').value);
+		const innerTipY = Number(document.getElementById('innerTipY').value);
+		const widthOfBrace = Number(document.getElementById('widthOfBrace').value);
+		const centerThickness = Number(document.getElementById('centerThickness').value);
+		const tipThickness = Number(document.getElementById('tipThickness').value);
+		const staffDistance = Number(document.getElementById('staffDistance').value);
+		const halfStaffDist = staffDistance/2
+
+		const scale = canvas.height/staffDistance*0.6;
+		ctx.save();
+		ctx.scale(scale,scale);
+		ctx.translate(staffDistance/10,staffDistance/1.8);
+
+
+
+		const xOffset = canvas.width/2;
+		const yOffset = canvas.height/2;
+		console.log(-0.1618+outerTipX,scale,xOffset,yOffset);
+		//ctx.fillRect(0,-staffDistance/2,1,staffDistance);
+
+		ctx.lineWidth = 0.01;
+		ctx.beginPath();
+		ctx.moveTo(0,-halfStaffDist);
+		
+		ctx.bezierCurveTo(
+			-0.1618+outerTipX,-halfStaffDist+0.1618+outerTipY, //outerTip
+			0.165+outerBodyX,-0.085-outerBodyY, //outerBody
+			-widthOfBrace,0, //widthOfBrace
+		);
+		ctx.bezierCurveTo(
+			0.165+outerBodyX,0.085+outerBodyY, //outerBody
+			-0.1618+outerTipX,halfStaffDist-0.1618-outerTipY, //outerTip
+			0,halfStaffDist, //widthOfBrace
+		);
+		ctx.lineTo(0,halfStaffDist-tipThickness); //tipThickness
+		ctx.bezierCurveTo(
+			-0.1618+outerTipX+innerTipX,halfStaffDist-0.1618-outerTipY+innerTipY, //innerTip
+			0.165+outerBodyX+innerBodyX,0.085+outerBodyY+innerBodyY, //innerBody
+			-widthOfBrace+centerThickness,0, //widthOfBrace
+		);
+		ctx.bezierCurveTo(
+			0.165+outerBodyX+innerBodyX,0.085-outerBodyY+innerBodyY, //innerBody
+			-0.1618+outerTipX+innerTipX,-halfStaffDist-0.1618+outerTipY+innerTipY, //innerTip
+			0,-halfStaffDist+tipThickness, //widthOfBrace
+		);
+
+		ctx.closePath();
+		ctx.fill();
+		//		ctx.stroke();
+		ctx.restore();
+	 }
+
+	 
+    // Initial canvas setup
+    resizeCanvas();
+  </script>
+
+</body>
+</html>
