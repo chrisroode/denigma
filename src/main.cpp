@@ -16,15 +16,21 @@
 
 //Shout out to Deguerre https://github.com/Deguerre
 struct ScoreFileCrypter {
-	uint32_t state = 0x28006D45;
+	const uint32_t initialState = 0x28006D45;
 
 	void CryptBuffer(uint8_t* buffer, std::size_t length)
 	{
+		uint32_t state = initialState;
+		int i = 0;
 		while (length-- > 0) {
+			if ( i % 0x20000 == 0 ) {
+				state = initialState;
+			}
 			state = state * 0x41c64e6d + 0x3039; // BSD rand()!
 			uint16_t upper = state >> 16;
 			uint8_t c = upper + upper / 255;
 			*buffer++ ^= c;
+			i++;
 		}
 	}
 };
