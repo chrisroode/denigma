@@ -7,3 +7,11 @@ nodeApp/node_modules/
 
 # this is a folder where I run scripts and all kinds of junk files are created.  Where I target the nuking of files.
 /nodeApp/groundZero
+
+
+# Just a temporary place I stuck some files.
+/junk/
+
+/build/
+
+/src/minizip/
