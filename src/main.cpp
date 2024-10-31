@@ -77,7 +77,7 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 			unzClose(zip);
 			return false;
 		}
-		std::cout << "Unzipping " << fileName;
+		// std::cout << "Unzipping " << fileName << std::endl;
 		/*
 		std::cout << "-----------\nversion " << fileInfo.version
 			<< "\nversion_needed " << fileInfo.version_needed
