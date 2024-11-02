@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
@@ -37,14 +38,19 @@ struct ScoreFileCrypter {
 
 
 
-void create_directory(const std::string& dirName) {
-	#ifdef _WIN32
-		_mkdir(dirName.c_str()); // For Windows
-	#else
-		mkdir(dirName.c_str(), 0755); // For Linux/macOS
-	#endif
-}
+void create_directories(const std::string& filePath) {
+    std::filesystem::path file(filePath);
+    std::filesystem::path parentDir = file.parent_path();
 
+    // Create the parent directory if it doesn't exist
+    if (!parentDir.empty() && !std::filesystem::exists(parentDir)) {
+        std::error_code ec; // To capture any error during creation
+        std::filesystem::create_directories(parentDir, ec); // Creates parentDir and all necessary parent directories
+        if (ec) {
+            std::cerr << "Error creating directories: " << ec.message() << std::endl;
+        }
+    }
+}
 
 
 
@@ -62,12 +68,6 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 		return false;
 	}
 
-	create_directory(outputDir);
-	std::string subFolder1 = outputDir + "/META-INF";
-	std::string subFolder2 = outputDir + "/presets";
-	create_directory(subFolder1);
-	create_directory(subFolder2);
-
 	do {
 		char fileName[256];
 		unz_file_info fileInfo;
@@ -77,6 +77,7 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 			unzClose(zip);
 			return false;
 		}
+		// std::cout << "Unzipping " << fileName << std::endl;
 		/*
 		std::cout << "-----------\nversion " << fileInfo.version
 			<< "\nversion_needed " << fileInfo.version_needed
@@ -96,19 +97,15 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 		*/
 		std::string fullPath = outputDir + "/" + fileName;
 
-		if (fileInfo.external_fa & 0x10) { // If it's a directory
-			create_directory(fullPath);
-		} else {
+		create_directories(fullPath);
+		if (!(fileInfo.external_fa & 0x10)) { // If it's a directory
 			int state = unzOpenCurrentFile(zip);
 			if (state != UNZ_OK) {
 				std::cerr << "Error: Cannot open current file in zip. Err Code " << state << std::endl;
 				unzClose(zip);
 				return false;
 			}
-			
 
-
-			
 			FILE* outFile = fopen(fullPath.c_str(), "wb");
 			if (outFile == nullptr) {
 				std::cerr << "Error: Cannot open output file " << fullPath << std::endl;
@@ -116,7 +113,6 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 				unzClose(zip);
 				return false;
 			}
-			
 
 			char buffer[8192];
 			int bytesRead = 0;
@@ -126,7 +122,6 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 
 			fclose(outFile);
 			unzCloseCurrentFile(zip);
-			
 		}
 	} while (unzGoToNextFile(zip) == UNZ_OK);
 
@@ -142,8 +137,8 @@ bool decode_score_dat(const std::string& openPath, const std::string& writePath,
 	FILE* inFile = fopen(openPath.c_str(), "r");
 
 	fseek(inFile, 0, SEEK_END);
-   std::size_t fileSize = ftell(inFile);
-   rewind(inFile);
+	std::size_t fileSize = ftell(inFile);
+	rewind(inFile);
 
 	uint8_t* buffer = static_cast<uint8_t*>(malloc(fileSize));
 	if (!buffer) {
@@ -160,8 +155,8 @@ bool decode_score_dat(const std::string& openPath, const std::string& writePath,
 		return false;
 	}
 
-   // Step 5: Close the file and return the buffer
-   fclose(inFile);
+	// Step 5: Close the file and return the buffer
+	fclose(inFile);
 
 	ScoreFileCrypter theTool;
 	std::cout << "file size " << fileSize << "\n";
@@ -249,7 +244,7 @@ bool decode_score_dat(const std::string& openPath, const std::string& writePath,
 int main(int argc, char* argv[]) {
 	
 	if (argc < 2) {
-		std::cerr << "Usage: " << argv[0] << " <zip file>" << std::endl;
+		std::cerr << "Usage: " << argv[0] << " <musx file>" << std::endl;
 		return 1;
 	}
 
@@ -257,7 +252,7 @@ int main(int argc, char* argv[]) {
 	std::string outputDir = zipFilePath.substr(0, zipFilePath.find_last_of('.'));
 
 	if (!extract_zip(zipFilePath, outputDir)) {
-		std::cerr << "Failed to extract zip file." << std::endl;
+		std::cerr << "Failed to extract zip file " << zipFilePath << " to " << outputDir << std::endl;
 		return 1;
 	}
 
