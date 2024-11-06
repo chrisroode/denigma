@@ -50,9 +50,3 @@ target_link_libraries(denigma PRIVATE
 target_include_directories(denigma PRIVATE
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
 )
-
-# Clean up target (to replicate `make clean`)
-add_custom_target(clean_all
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${OUTPUT_DIR} ${MINIZIP_DIR}/build
-    COMMENT "Removing build directories"
-)

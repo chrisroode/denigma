@@ -4,7 +4,6 @@
 set(i "1")
 set(COMMAND_ARG "")
 while(i LESS "${CMAKE_ARGC}")
-	message(STATUS "arg: ${i}  ${CMAKE_ARGV${i}}")
 	if("${CMAKE_ARGV${i}}" STREQUAL "clean")
 		set(COMMAND_ARG "${CMAKE_ARGV${i}}")
         break() # done with CMake arguments
@@ -25,9 +24,9 @@ endif()
 # Check if the build directory exists (implies CMake was run before)
 if(NOT EXISTS ${BUILD_DIR}/CMakeCache.txt)
     message(STATUS "CMake cache not found, configuring project...")
-    execute_process(COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR})
+    execute_process(COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${BUILD_DIR})
 endif()
 
 # Build the project
 message(STATUS "Building project...")
-execute_process(COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR})
+execute_process(COMMAND ${CMAKE_COMMAND} --build ${BUILD_DIR})
