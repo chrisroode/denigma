@@ -20,13 +20,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 include_directories(src)
 
 # Find required libraries
-find_library(BZ2 bz2 REQUIRED)
-find_library(ZLIB z REQUIRED)
-find_library(ZSTD zstd REQUIRED)
-find_library(COMPRESSION compression REQUIRED)
-find_library(ICONV iconv REQUIRED)
-find_library(LZMA lzma REQUIRED)
-find_library(CRYPTO crypto REQUIRED)
+find_library(ZLIB z)
 
 # Add minizip as an external project
 add_subdirectory(${MINIZIP_DIR} ${CMAKE_BINARY_DIR}/minizip)
@@ -36,13 +30,7 @@ add_executable(denigma src/main.cpp)
 
 # Link libraries to the target
 target_link_libraries(denigma PRIVATE
-    ${BZ2}
     ${ZLIB}
-    ${ZSTD}
-    ${COMPRESSION}
-    ${ICONV}
-    ${LZMA}
-    ${CRYPTO}
     minizip
 )
 
