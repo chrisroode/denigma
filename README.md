@@ -1,5 +1,9 @@
 ## denigma command line utility
 
+This utility extracts the Enigma XML from a Finale `.musx` file.
+
+### Build Instructions
+
 Currently the only working build is for macOS.
 
 Download the GitHub repository and pull the `minizip` submodule/
