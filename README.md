@@ -4,18 +4,58 @@ This utility extracts the Enigma XML from a Finale `.musx` file.
 
 ## Build Instructions
 
-Currently the only working build is for macOS.
-
 Download the GitHub repository and pull the `minizip` submodule/
 
-You will need to install the latest cmake and zlib:
+### macOS-Specific
+
+Install the latest cmake and zlib:
 
 ```bash
 brew install cmake
 brew install zlib
 ```
 
-You may need to install other dependencies.
+---
+
+### Windows-Specific
+
+You will need package managers Choclatey (`choco`) and `vcpkg`.
+
+[Choclatey install instructions](https://chocolatey.org/install)  
+[VCPKG install instructions](https://github.com/microsoft/vcpkg)
+
+Install the latest cmake and zlib
+
+```bat
+choco install cmake
+vcpkg install zlib
+```
+
+Create a the file `C:\Users\<your-user>\AppData\Roaming\CMake\CMakeUserPresets.json` with the following contents:
+
+```json
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "vcpkg-toolchain",
+      "hidden": false,
+      "description": "Use vcpkg toolchain file",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/path/to/your/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      }
+    }
+  ]
+}
+```
+
+(Specify the actual path where you installed vcpkg.)
+
+---
+
+On either operating system you may need to install other dependencies. The cmake build will report them if so. You can install additional dependencies with `brew` (macOS) or `vcpkg` (Windows).
 
 ---
 
@@ -25,7 +65,7 @@ Build with
 cmake -P build.cmake
 ```
 
-or
+or (macOS-only)
 
 ```bash
 ./build.cmake
@@ -38,7 +78,7 @@ You can clean the build directory with
 cmake -P build.cmake -- clean
 ```
 
-or
+or (macOS only)
 
 ```bash
 ./build.cmake -- clean
