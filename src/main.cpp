@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
-#include "minizip/unzip.h"
+#include "mz_compat.h"
 #include <errno.h>
 #include <zlib.h>
 
@@ -134,7 +134,7 @@ bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
 
 bool decode_score_dat(const std::string& openPath, const std::string& writePath, const std::string& gzPath) {
 	std::cout << "open " << openPath << " and then write to " << writePath << "\n";
-	FILE* inFile = fopen(openPath.c_str(), "r");
+	FILE* inFile = fopen(openPath.c_str(), "rb");
 
 	fseek(inFile, 0, SEEK_END);
 	std::size_t fileSize = ftell(inFile);

@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
 
+set(BUILD_SHARED_LIBS OFF)
+
 # Define output directory for executables
 set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/build")
 set(MINIZIP_DIR "minizip")
@@ -20,13 +22,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 include_directories(src)
 
 # Find required libraries
-find_library(BZ2 bz2 REQUIRED)
-find_library(ZLIB z REQUIRED)
-find_library(ZSTD zstd REQUIRED)
-find_library(COMPRESSION compression REQUIRED)
-find_library(ICONV iconv REQUIRED)
+find_package(BZip2 REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(ZSTD REQUIRED)
+find_package(Iconv REQUIRED)
 find_library(LZMA lzma REQUIRED)
 find_library(CRYPTO crypto REQUIRED)
+
 
 # Add minizip as an external project
 add_subdirectory(${MINIZIP_DIR} ${CMAKE_BINARY_DIR}/minizip)
@@ -36,15 +38,17 @@ add_executable(denigma src/main.cpp)
 
 # Link libraries to the target
 target_link_libraries(denigma PRIVATE
-    ${BZ2}
-    ${ZLIB}
-    ${ZSTD}
-    ${COMPRESSION}
-    ${ICONV}
+    ${BZIP2_LIBRARES}
+    ${ZLIB_LIBRARIES}
+    ${ZSTD_LIBRARIES}
+    ${ICONV_LIBRARIES}
     ${LZMA}
     ${CRYPTO}
     minizip
 )
+
+# Ensure the include directory is added
+target_include_directories(denigma PRIVATE ${ZLIB_INCLUDE_DIRS})
 
 # Add minizip build directory as an alias for minizip include
 target_include_directories(denigma PRIVATE
