@@ -1,71 +1,42 @@
 # denigma command line utility
 
-This utility extracts the Enigma XML from a Finale `.musx` file.
+This utility extracts the Enigma XML from a Finale `.musx` file. It has no external dependencies.
 
-## Build Instructions
+## Setup Instructions
 
-Download the GitHub repository and pull the `minizip` submodule/
+Clone the GitHub repository and clone all submodules.
 
 ### macOS-Specific
 
-Install the latest cmake and zlib:
+Install the latest cmake:
 
 ```bash
 brew install cmake
-brew install zlib
 ```
 
 ---
 
 ### Windows-Specific
 
-You will need package managers Choclatey (`choco`) and `vcpkg`.
+You must install cmake. The easiest way is with a package manager such as Choclatey (`choco`).
 
-[Choclatey install instructions](https://chocolatey.org/install)  
-[VCPKG install instructions](https://github.com/microsoft/vcpkg)
+[Choclatey install instructions](https://chocolatey.org/install)
 
-Install the latest cmake and zlib
+Install the latest cmake
 
 ```bat
 choco install cmake
-vcpkg install zlib
 ```
-
-Create a the file `C:\Users\<your-user>\AppData\Roaming\CMake\CMakeUserPresets.json` with the following contents:
-
-```json
-{
-  "version": 3,
-  "configurePresets": [
-    {
-      "name": "vcpkg-toolchain",
-      "hidden": false,
-      "description": "Use vcpkg toolchain file",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "C:/path/to/your/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      }
-    }
-  ]
-}
-```
-
-(Specify the actual path where you installed vcpkg.)
-
 ---
 
-On either operating system you may need to install other dependencies. The cmake build will report them if so. You can install additional dependencies with `brew` (macOS) or `vcpkg` (Windows).
+## Build Instructions
 
----
-
-Build with
 
 ```bash
 cmake -P build.cmake
 ```
 
-or (macOS-only)
+or (for Linux or macOS)
 
 ```bash
 ./build.cmake
@@ -78,7 +49,7 @@ You can clean the build directory with
 cmake -P build.cmake -- clean
 ```
 
-or (macOS only)
+or (for Linux or macOS)
 
 ```bash
 ./build.cmake -- clean
@@ -123,7 +94,7 @@ or (macOS only)
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/build/denigma",
-            "args": [],
+            "args": [], // specify command line arguments here for testing
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,
             "env": {},
