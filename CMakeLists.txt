@@ -36,8 +36,3 @@ add_executable(denigma src/main.cpp)
 # Ensure the include directories ar added
 target_include_directories(denigma PRIVATE ${EZGZ_DIR})
 target_include_directories(denigma PRIVATE ${MINIZ_DIR})
-
-# Add minizip build directory as an alias for minizip include
-target_include_directories(denigma PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-)
