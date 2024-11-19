@@ -1,3 +1,6 @@
-[submodule "minizip"]
-	path = minizip
-	url = git@github.com:zlib-ng/minizip-ng.git
+[submodule "ezgz"]
+	path = ezgz
+	url = git@github.com:Dugy/EzGz.git
+[submodule "miniz"]
+	path = miniz
+	url = git@github.com:tfussell/miniz-cpp.git

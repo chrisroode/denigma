@@ -2,25 +2,20 @@
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
-#include "minizip/unzip.h"
 #include <errno.h>
-#include <zlib.h>
 
+#include "zip_file.hpp"		// miniz submodule (for zip)
+#include "ezgz.hpp"			// ezgz submodule (for gzip)
 
-#ifdef _WIN32
-	#include <direct.h> // For _mkdir on Windows
-#else
-	#include <unistd.h>
-	#include <dirent.h>
-#endif
 
 
 //Shout out to Deguerre https://github.com/Deguerre
 struct ScoreFileCrypter {
 	const uint32_t initialState = 0x28006D45;
 
-	void CryptBuffer(uint8_t* buffer, std::size_t length)
+	void CryptBuffer(std::vector<uint8_t>& buffer)
 	{
+		size_t length = buffer.size();
 		uint32_t state = initialState;
 		int i = 0;
 		while (length-- > 0) {
@@ -30,8 +25,7 @@ struct ScoreFileCrypter {
 			state = state * 0x41c64e6d + 0x3039; // BSD rand()!
 			uint16_t upper = state >> 16;
 			uint8_t c = upper + upper / 255;
-			*buffer++ ^= c;
-			i++;
+			buffer[i++] ^= c;
 		}
 	}
 };
@@ -56,186 +50,90 @@ void create_directories(const std::string& filePath) {
 
 
 bool extract_zip(const std::string& zipFile, const std::string& outputDir) {
-	unzFile zip = unzOpen64(zipFile.c_str());
-	if (zip == nullptr) {
-		std::cerr << "Error: Cannot open zip file " << zipFile << std::endl;
+	try {
+		miniz_cpp::zip_file zip(zipFile.c_str());
+		for(auto &fileInfo : zip.infolist()) {
+			/*
+			std::cout << "Unzipping " << outputDir << "/" << fileInfo.filename << " ";
+			std::cout << std::setfill('0')
+					  << fileInfo.date_time.year << '-'
+					  << std::setw(2) << fileInfo.date_time.month << '-'
+					  << std::setw(2) << fileInfo.date_time.day << ' '
+					  << std::setw(2) << fileInfo.date_time.hours << ':'
+					  << std::setw(2) << fileInfo.date_time.minutes << ':'
+					  << std::setw(2) << fileInfo.date_time.seconds << std::endl
+					  << std::setfill(' ');
+			std::cout << "-----------\n create_version " << fileInfo.create_version
+					  << "\n extract_version " << fileInfo.extract_version
+					  << "\n flag " << fileInfo.flag_bits
+					  << "\n compressed_size " << fileInfo.compress_size
+					  << "\n crc " << fileInfo.crc
+					  << "\n compress_size " << fileInfo.compress_size
+					  << "\n file_size " << fileInfo.file_size
+					  << "\n extra " << fileInfo.extra
+					  << "\n comment " << fileInfo.comment
+					  << "\n header_offset " << fileInfo.header_offset;
+			std::cout << std::showbase << std::hex
+					  << "\n internal_attr " << fileInfo.internal_attr
+					  << "\n external_attr " << fileInfo.external_attr << "\n\n"
+					  << std::noshowbase << std::dec;
+			*/
+			std::string fullPath = outputDir + "/" + fileInfo.filename;
+			create_directories(fullPath);
+
+			if (!(fileInfo.external_attr & 0x10)) { // If it's not a directory
+				std::string buffer = zip.read(fileInfo);
+				std::ofstream outFile;
+				outFile.exceptions(std::ios::failbit | std::ios::badbit);
+				outFile.open(fullPath, std::ios::binary);
+				outFile.write(buffer.data(), buffer.size());
+			}
+		}
+	} catch (const std::ios_base::failure& ex) {
+		std::cout << "unable to unzip file " << zipFile << std::endl
+				  << "message: " << ex.what() << std::endl
+				  << "details: " << std::strerror(ex.code().value()) << std::endl;
+	} catch (const std::exception &ex) {
+		std::cout << "Error: unable to unzip file " << zipFile << " (exception: " << ex.what() << ")" << std::endl;
 		return false;
 	}
-
-	if (unzGoToFirstFile(zip) != UNZ_OK) {
-		std::cerr << "Error: Cannot go to first file in zip" << std::endl;
-		unzClose(zip);
-		return false;
-	}
-
-	do {
-		char fileName[256];
-		unz_file_info fileInfo;
-		
-		if (unzGetCurrentFileInfo(zip, &fileInfo, fileName, sizeof(fileName), nullptr, 0, nullptr, 0) != UNZ_OK) {
-			std::cerr << "Error: Cannot get file info" << std::endl;
-			unzClose(zip);
-			return false;
-		}
-		// std::cout << "Unzipping " << fileName << std::endl;
-		/*
-		std::cout << "-----------\nversion " << fileInfo.version
-			<< "\nversion_needed " << fileInfo.version_needed
-			<< "\nflag " << fileInfo.flag
-			<< "\ncompression_method " << fileInfo.compression_method
-			<< "\n compressed_size " << fileInfo.compressed_size
-			<< "\n mz_dos_date " << fileInfo.mz_dos_date
-			<< "\n crc " << fileInfo.crc
-			<< "\n compressed_size " << fileInfo.compressed_size
-			<< "\n uncompressed_size " << fileInfo.uncompressed_size
-			<< "\n size_filename " << fileInfo.size_filename << " " << fileName
-			<< "\n size_file_extra " << fileInfo.size_file_extra
-			<< "\n size_file_comment " << fileInfo.size_file_comment
-			<< "\n disk_num_start " << fileInfo.disk_num_start
-			<< "\n internal_fa " << fileInfo.internal_fa
-			<< "\n external_fa " << fileInfo.external_fa << "\n\n";
-		*/
-		std::string fullPath = outputDir + "/" + fileName;
-
-		create_directories(fullPath);
-		if (!(fileInfo.external_fa & 0x10)) { // If it's a directory
-			int state = unzOpenCurrentFile(zip);
-			if (state != UNZ_OK) {
-				std::cerr << "Error: Cannot open current file in zip. Err Code " << state << std::endl;
-				unzClose(zip);
-				return false;
-			}
-
-			FILE* outFile = fopen(fullPath.c_str(), "wb");
-			if (outFile == nullptr) {
-				std::cerr << "Error: Cannot open output file " << fullPath << std::endl;
-				unzCloseCurrentFile(zip);
-				unzClose(zip);
-				return false;
-			}
-
-			char buffer[8192];
-			int bytesRead = 0;
-			while ((bytesRead = unzReadCurrentFile(zip, buffer, sizeof(buffer))) > 0) {
-				fwrite(buffer, 1, bytesRead, outFile);
-			}
-
-			fclose(outFile);
-			unzCloseCurrentFile(zip);
-		}
-	} while (unzGoToNextFile(zip) == UNZ_OK);
-
-	unzClose(zip);
 	return true;
 }
 
 
 
 
-bool decode_score_dat(const std::string& openPath, const std::string& writePath, const std::string& gzPath) {
+bool decode_score_dat(const std::string& openPath, const std::string& writePath) {
 	std::cout << "open " << openPath << " and then write to " << writePath << "\n";
-	FILE* inFile = fopen(openPath.c_str(), "r");
 
-	fseek(inFile, 0, SEEK_END);
-	std::size_t fileSize = ftell(inFile);
-	rewind(inFile);
+	try	{
+		std::ifstream inFile;
+		inFile.exceptions(std::ios::failbit | std::ios::badbit);
+		inFile.open(openPath.c_str(), std::ios::binary);
+		std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
 
-	uint8_t* buffer = static_cast<uint8_t*>(malloc(fileSize));
-	if (!buffer) {
-		perror("Failed to allocate buffer");
-		fclose(inFile);
+		ScoreFileCrypter theTool;
+		std::cout << "file size " << buffer.size() << "\n";
+
+		theTool.CryptBuffer(buffer);
+
+		std::vector<char> xmlBuffer = EzGz::IGzFile<>({buffer.data(), buffer.size()}).readAll();
+
+		size_t uncompressedSize = xmlBuffer.size();
+		std::cout << "decompressed Size " << uncompressedSize << "\n";
+
+		std::ofstream xmlFile;
+		xmlFile.exceptions(std::ios::failbit | std::ios::badbit);
+		xmlFile.open(writePath, std::ios::binary);
+		xmlFile.write(xmlBuffer.data(), xmlBuffer.size());
+	} catch (const std::ios_base::failure& ex) {
+		std::cout << "unable to decode " << openPath << std::endl
+				  << "message: " << ex.what() << std::endl
+				  << "details: " << std::strerror(ex.code().value()) << std::endl;
+	} catch (const std::exception &ex) {
+		std::cout << "unable to decode " << openPath << " (exception: " << ex.what() << ")" << std::endl;
 		return false;
 	}
-
-	// Step 4: Read the file contents into the buffer
-	if (fread(buffer, 1, fileSize, inFile) != fileSize) {
-		perror("Failed to read file");
-		free(buffer);
-		fclose(inFile);
-		return false;
-	}
-
-	// Step 5: Close the file and return the buffer
-	fclose(inFile);
-
-	ScoreFileCrypter theTool;
-	std::cout << "file size " << fileSize << "\n";
-
-	theTool.CryptBuffer(buffer,fileSize);
-
-	FILE* gzipFile = fopen(gzPath.c_str(),"wb");
-	if (!gzipFile) {
-		perror("Failed to open file");
-		return false;
-	}
-	 std::size_t bytesWritten = fwrite(buffer, sizeof(uint8_t), fileSize, gzipFile);
-	if (bytesWritten != fileSize) {
-		perror("Failed to write to file");
-		  fclose(gzipFile);
-		  return false;
-	}
-
-	// Close the file
-	fclose(gzipFile);
-
-
-	gzFile gzRead = gzopen(gzPath.c_str(), "rb");
-	if (!gzRead) {
-		perror("Failed to open gzip file");
-		return false;
-	}
-
-	const std::size_t chunkSize = 16384;
-	std::size_t bufferSize = chunkSize;
-	uint8_t* xmlBuffer = static_cast<uint8_t*>(malloc(bufferSize));
-	if (!xmlBuffer) {
-		perror("Failed to allocate buffer");
-		gzclose(gzRead);
-		return false;
-	}
-
-	std::size_t totalRead = 0;
-	int bytesRead;
-	while ((bytesRead = gzread(gzRead, xmlBuffer + totalRead, chunkSize)) > 0) {
-		totalRead += bytesRead;
-
-		// If buffer is full, expand it
-		if (totalRead == bufferSize) {
-			bufferSize += chunkSize;
-			xmlBuffer = static_cast<uint8_t*>(realloc(xmlBuffer, bufferSize));
-			if (!buffer) {
-				perror("Failed to reallocate buffer");
-				gzclose(gzRead);
-				return false;
-			}
-		}
-	}
-
-	// Clean up
-	gzclose(gzRead);
-	int uncompressedSize = totalRead;
-	std::cout << "decompressed Size " << uncompressedSize << "\n";
-
-	//Bookmark
-	FILE* xmlFile = fopen(writePath.c_str(),"wb");
-	if (!xmlFile) {
-		perror("Failed to open file");
-		return false;
-	}
-	bytesWritten = fwrite(xmlBuffer, sizeof(uint8_t), uncompressedSize, xmlFile);
-	if (bytesWritten != uncompressedSize) {
-		perror("Failed to write to file");
-		  fclose(xmlFile);
-		  return false;
-	}
-
-	// Close the file
-	fclose(xmlFile);
-	if (remove(gzPath.c_str()) != 0) {
-        perror("Error deleting the temporary file");
-    } else {
-        printf("Temporary file deleted successfully\n");
-    }
 
 	return true;
 }
@@ -259,8 +157,7 @@ int main(int argc, char* argv[]) {
 	std::cout << "Decrypting and expanding score.dat\n";
 	std::string datOpen = outputDir + "/score.dat";
 	std::string datGud = outputDir + "/score.enigmaxml";
-	std::string datGzzzz = outputDir + "/score.gz";
-	if (!decode_score_dat(datOpen,datGud,datGzzzz)) {
+	if (!decode_score_dat(datOpen, datGud)) {
 		std::cerr << "BONK! we failed";
 		return 1;
 	}
